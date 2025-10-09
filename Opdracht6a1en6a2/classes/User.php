@@ -99,7 +99,7 @@ class User {
         return $errors;
     }
 
-    public function loginUser(): bool {
+    public function userLogin(): bool {
         // Maak database connectie
         $db = new Database();
         $conn = $db->dbConnect();
