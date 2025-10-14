@@ -65,18 +65,20 @@ class User {
 
     
     function validateLogin() {
-        $errors = [];
+    $errors = [];
 
-        if (empty($this->username)) {
-            array_push($errors, "Username is verplicht");
-        }
-
-        if (empty($this->password)) {
-            array_push($errors, "Password is verplicht");
-        }
-        
-        return $errors;
+    if (empty($this->username)) {
+        array_push($errors, "Username is verplicht");
+    } elseif (strlen($this->username) < 3 || strlen($this->username) > 50) {
+        array_push($errors, "Username moet tussen 3 en 50 tekens lang zijn");
     }
+
+    if (empty($this->password)) {
+        array_push($errors, "Password is verplicht");
+    }
+    
+    return $errors;
+}
 
     
     function validateRegistration() {
