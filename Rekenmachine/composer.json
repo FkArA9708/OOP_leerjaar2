@@ -1,0 +1,15 @@
+{
+    "name": "furka/rekenmachine",
+    "autoload": {
+        "psr-4": {
+            "Rekenmachine\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "FkArA9708",
+            "email": "9007365@student.zadkine.nl"
+        }
+    ],
+    "require": {}
+}
