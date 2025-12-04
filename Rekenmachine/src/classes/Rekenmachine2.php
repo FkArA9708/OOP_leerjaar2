@@ -1,4 +1,5 @@
 <?php
+namespace Rekenmachine\classes;
 class Rekenmachine2 {
     // properties
     public $a;
