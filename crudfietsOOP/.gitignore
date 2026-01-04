@@ -1,0 +1,7 @@
+/vendor/
+/.phpunit.cache/
+/coverage-report/
+testdox.html
+testdox.txt
+clover.xml
+coverage.txt
