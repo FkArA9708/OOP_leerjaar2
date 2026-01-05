@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<ruleset name="Calculator Project">
+    <description>Code style regels voor het Calculator project</description>
+    
+   
+    <file>src</file>  
+    <file>tests</file> 
+    
+    <!-- Negeer vendor map -->
+    <exclude-pattern>vendor/*</exclude-pattern>
+    
+    <!-- Gebruik PSR-12 standaard (moderne PHP standaard) -->
+    <rule ref="PSR12"/>
+
+     <rule ref="PSR1.Files.SideEffects">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    
+    <!-- Gebruik 4 spaties voor inspringen -->
+    <arg name="tab-width" value="4"/>
+    
+    <!-- Toon kleuren in output -->
+    <arg name="colors"/>
+    
+    <!-- Toon progressie -->
+    <arg value="p"/>
+</ruleset>

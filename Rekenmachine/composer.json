@@ -5,11 +5,31 @@
             "Rekenmachine\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Rekenmachine\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "FkArA9708",
             "email": "9007365@student.zadkine.nl"
         }
     ],
-    "require": {}
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^4.0"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse",
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "check-all": [
+            "@cs-check",
+            "@stan",
+            "@test"
+        ]
+    }
 }

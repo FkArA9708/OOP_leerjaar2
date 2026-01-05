@@ -1,0 +1,9 @@
+# Composer
+/vendor/
+
+# PHPUnit cache
+.phpunit.result.cache
+
+# OS bestanden
+.DS_Store
+Thumbs.db
