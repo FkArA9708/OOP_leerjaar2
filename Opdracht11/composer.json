@@ -1,0 +1,11 @@
+{
+    "name": "student-sd2/producten-api-client",
+    "description": "Een client om producten te beheren via een externe API",
+    "type": "project",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
