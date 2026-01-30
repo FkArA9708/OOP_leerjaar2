@@ -3,14 +3,15 @@ require_once 'Product.php';
 
 class ProductApiClient {
     
-    private const API_BASE_URL = 'https://st1738846988.splsites.nl/api.php';
+    
+    private const API_BASE_URL = 'http://localhost/APIopdracht/api.php';
     private $user_agent;
     
     public function __construct() {
         $this->user_agent = 'MijnProductApp/1.0 (Student SD2)';
     }
     
-    //curl instellingen
+    // curl instellingen
     private function executeCurl($ch) {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERAGENT, $this->user_agent);
@@ -28,24 +29,25 @@ class ProductApiClient {
         
         return [$response, $http_code];
     }
-    //alle producten uit de database ophalen
+    
+    // alle producten uit de database ophalen
     public function getProducts($zoekterm = '') {
-        $url = self::API_BASE_URL; //verwijzen naar de parent voor de api url
+        $url = self::API_BASE_URL;
         if (!empty($zoekterm)) { 
             $url .= '?naam=' . urlencode($zoekterm);
         }
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']); 
-        //de applicatie accepteert json bestanden 
+        
         list($response, $http_code) = $this->executeCurl($ch);
-//als de http_code niet 200 is, wordt een json string verandert naar php code en weergeeft api foutmelding 
+
         if ($http_code != 200) {
             $error_data = json_decode($response, true);
             $error_msg = $error_data['error'] ?? 'Onbekende API fout';
             throw new Exception("API fout ($http_code): " . $error_msg);
         }
-//producten in de lege array zetten
+        
         $productenData = json_decode($response, true);
         $producten = [];
         
@@ -62,11 +64,12 @@ class ProductApiClient {
         
         return $producten;
     }
-    //product toevoegen in de tabel (database)
+    
+    // product toevoegen in de tabel (database)
     public function addProduct($naam, $prijs) {
         $url = self::API_BASE_URL;
-        $data = ['naam' => trim($naam), 'prijs' => (float)$prijs]; //html naam en prijs verwijzen naar variabelen
-        //nieuwe curl sessie met instellingen, accepteert json, als er een lijst met response en http code staat, wordt curl geexecutet
+        $data = ['naam' => trim($naam), 'prijs' => (float)$prijs];
+        
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -76,10 +79,10 @@ class ProductApiClient {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         
         list($response, $http_code) = $this->executeCurl($ch);
-        //als de http codes goed zijn (geen errors in http code)
+
         if ($http_code == 200 || $http_code == 201) {
             $response_data = json_decode($response, true);
-            return [ //returnt success en toevoegt de producten
+            return [
                 'success' => true,
                 'product' => new Product(
                     $response_data['product']['naam'] ?? $naam,
@@ -88,16 +91,17 @@ class ProductApiClient {
                     $response_data['product']['created_at'] ?? null
                 )
             ];
-        } else { //foutmelding als product niet toegevoegt kan worden
+        } else {
             $error_data = json_decode($response, true);
             $error_msg = $error_data['error'] ?? 'Kon product niet toevoegen';
             throw new Exception("API fout ($http_code): " . $error_msg);
         }
     }
-    //verwijder producten uit de database of tabel
+    
+    // verwijder producten uit de database of tabel
     public function deleteProduct($id) {
-        $url = self::API_BASE_URL . '/' . $id; //id van de producten achter de slash van de url stoppen
-        //alweer een curl sessie met instellingen met de value delete en accepteert json bestanden vanuit de api
+        $url = self::API_BASE_URL . '/' . $id;
+        
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
@@ -106,15 +110,16 @@ class ProductApiClient {
 
         if ($http_code == 200 || $http_code == 204) {
             return true;
-    }    else { //foutmelding als een product niet verwijderd kan worden
+        } else {
             $error_data = json_decode($response, true);
             $error_msg = $error_data['error'] ?? 'Kon product niet verwijderen';
             throw new Exception("API fout ($http_code): " . $error_msg);
         }
     }
-//producten bewerken 
+    
+    // producten bewerken 
     public function updateProduct($id, $naam, $prijs) {
-        $url = self::API_BASE_URL . '/' . $id; //id in de url
+        $url = self::API_BASE_URL . '/' . $id;
         $data = ['naam' => trim($naam), 'prijs' => (float)$prijs];
 
         $ch = curl_init($url);
@@ -129,7 +134,7 @@ class ProductApiClient {
 
         if ($http_code == 200) {
             $response_data = json_decode($response, true);
-            return [ //hier worden de producten verwijderd als er een positief http code is
+            return [
                 'success' => true,
                 'product' => new Product(
                     $response_data['product']['naam'] ?? $naam,
@@ -137,7 +142,7 @@ class ProductApiClient {
                     $response_data['product']['id'] ?? $id,
                     $response_data['product']['created_at'] ?? null
                 )
-            ]; //foutmelding dat de producten niet bewerkt kan worden
+            ];
         } else {
             $error_data = json_decode($response, true);
             $error_msg = $error_data['error'] ?? 'Kon product niet bijwerken';

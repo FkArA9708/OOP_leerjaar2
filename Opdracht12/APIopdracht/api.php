@@ -4,16 +4,17 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
 
-$host = 'localhost';  
-$dbname = 'st1738846988';  
-$username = 'st1738846988';    
-$password = 'FFQJ1aBV7B8oasj';   
+$host = 'localhost';
+$dbname = 'producten';          
+$username = 'root';             
+$password = '';                 
 
 try {
     $pdo = new PDO(
@@ -33,34 +34,44 @@ try {
 
 
 $method = $_SERVER['REQUEST_METHOD'];
+$request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+
+$base_path = '/APIopdracht';
+if (strpos($request_uri, $base_path) === 0) {
+    $request_uri = substr($request_uri, strlen($base_path));
+}
+
+
 $id = null;
-$request_uri = $_SERVER['REQUEST_URI'] ?? '';
-
-
-if (preg_match('#/(\d+)$#', $request_uri, $matches)) {
+if (preg_match('#/api\.php/(\d+)$#', $request_uri, $matches)) {
+    $id = (int)$matches[1];
+} elseif (preg_match('#/(\d+)$#', $request_uri, $matches)) {
     $id = (int)$matches[1];
 }
 
-// Validatie voor naam en prijs
+// Function to validate product data
 function validateProductData($data, $id = null, $pdo) {
     $errors = [];
-    //als naam leeg is of meer dan 50 tekens, komt een foutmelding
-    if (!isset($data['naam']) || empty(trim($data['naam']))) {
+    
+    // Validate name
+    if (!isset($data['naam']) || empty(trim($data['naam']))) { //controle op lege naam en naam meer dan 50 tekens
         $errors[] = 'Naam is verplicht';
     } elseif (strlen(trim($data['naam'])) > 50) {
         $errors[] = 'Naam mag maximaal 50 tekens bevatten';
     }
     
-    if (!isset($data['prijs']) || !is_numeric($data['prijs'])) {
+    // prijs validatie
+    if (!isset($data['prijs']) || !is_numeric($data['prijs'])) { //bestaat er geen prijs variabel en bevat de prijs geen nummers
         $errors[] = 'Prijs is verplicht en moet een getal zijn';
     } elseif ($data['prijs'] < 0) {
         $errors[] = 'Prijs moet 0 of hoger zijn';
     }
     
-    // Controle op dubbele naam 
-    if (isset($data['naam']) && !empty(trim($data['naam']))) {
+    // Dubbele data naam controle
+    if (isset($data['naam']) && !empty(trim($data['naam']))) { //als naam niet leeg is en variabel naam bestaat
         $naam = trim($data['naam']);
-        $sql = "SELECT id FROM producten WHERE naam = ?";  
+        $sql = "SELECT id FROM products WHERE LOWER(naam) = LOWER(?)";
         $params = [$naam];
         
         if ($id) {
@@ -79,31 +90,31 @@ function validateProductData($data, $id = null, $pdo) {
     return $errors;
 }
 
-// GET METHOD
+// GET requests
 if ($method === 'GET') {
     try {
         $naam = $_GET['naam'] ?? '';
         
         if ($id) {
-            // Specifiek product 
-            $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM producten WHERE id = ?");
+            // Haal op een product via id
+            $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM products WHERE id = ?");
             $stmt->execute([$id]);
             $product = $stmt->fetch();
             
-            if ($product) { //als een product is, geef http response code 200 terug
+            if ($product) {
                 http_response_code(200);
                 echo json_encode($product);
-            } else { //anders komt een 404 melding waarin een product niet gevonden wordt
+            } else {
                 http_response_code(404);
                 echo json_encode(['error' => 'Product niet gevonden']);
             }
         } else {
-            // Alle producten
+            // Alle producten ophalen of zoeken via de naam van de product
             if ($naam) {
-                $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM producten WHERE naam LIKE ? ORDER BY id");
+                $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM products WHERE naam LIKE ? ORDER BY id");
                 $stmt->execute(["%$naam%"]);
             } else {
-                $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM producten ORDER BY id");
+                $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM products ORDER BY id");
                 $stmt->execute();
             }
             
@@ -118,17 +129,21 @@ if ($method === 'GET') {
     exit();
 }
 
-// POST: Nieuw product
+// POST requests (voor nieuwe product aanmaken)
 if ($method === 'POST') {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if ($data === null) {
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             http_response_code(400);
-            echo json_encode(['error' => 'Ongeldige JSON data']);
+            echo json_encode(['error' => 'Ongeldige JSON data: ' . json_last_error_msg()]);
             exit();
         }
-        //product data valideren, als er errors bestaan, komt http code 400 terug
+        
+        if (empty($data)) {
+            $data = $_POST; 
+        }
+        
         $errors = validateProductData($data, null, $pdo);
         if (!empty($errors)) {
             http_response_code(400);
@@ -139,13 +154,14 @@ if ($method === 'POST') {
         $naam = trim($data['naam']);
         $prijs = (float)$data['prijs'];
         
-        //de waardes van producten naam en prijs stoppen in de database
-        $stmt = $pdo->prepare("INSERT INTO producten (naam, prijs) VALUES (?, ?)");
+        // Insert product
+        $stmt = $pdo->prepare("INSERT INTO products (naam, prijs) VALUES (?, ?)");
         $stmt->execute([$naam, $prijs]);
         
         $newId = $pdo->lastInsertId();
-        //product selectie via id
-        $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM producten WHERE id = ?");
+        
+        // Haal op nieuw gemaakt product
+        $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM products WHERE id = ?");
         $stmt->execute([$newId]);
         $newProduct = $stmt->fetch();
         
@@ -161,9 +177,9 @@ if ($method === 'POST') {
     exit();
 }
 
-// PUT: Update product
+// Handle PUT requests (update product)
 if ($method === 'PUT') {
-    if (!$id) { //geen id betekent 400 http code
+    if (!$id) {
         http_response_code(400);
         echo json_encode(['error' => 'Product ID is vereist voor update']);
         exit();
@@ -172,14 +188,14 @@ if ($method === 'PUT') {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if ($data === null) { 
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) { //als er geen data is en een json error bestaat, komt een foutmelding tevoorschijn
             http_response_code(400);
-            echo json_encode(['error' => 'Ongeldige JSON data']);
+            echo json_encode(['error' => 'Ongeldige JSON data: ' . json_last_error_msg()]);
             exit();
         }
         
-        // Controle of product bestaat 
-        $stmt = $pdo->prepare("SELECT id FROM producten WHERE id = ?");
+        // Controle of een product bestaat
+        $stmt = $pdo->prepare("SELECT id FROM products WHERE id = ?");
         $stmt->execute([$id]);
         if (!$stmt->fetch()) {
             http_response_code(404);
@@ -188,7 +204,7 @@ if ($method === 'PUT') {
         }
         
         $errors = validateProductData($data, $id, $pdo);
-        if (!empty($errors)) {
+        if (!empty($errors)) { //als errors niet leeg zijn, geeft het http code 400
             http_response_code(400);
             echo json_encode(['error' => implode(', ', $errors)]);
             exit();
@@ -197,11 +213,12 @@ if ($method === 'PUT') {
         $naam = trim($data['naam']);
         $prijs = (float)$data['prijs'];
         
-        //producten bewerken
-        $stmt = $pdo->prepare("UPDATE producten SET naam = ?, prijs = ? WHERE id = ?");
+        // Update product
+        $stmt = $pdo->prepare("UPDATE products SET naam = ?, prijs = ? WHERE id = ?");
         $stmt->execute([$naam, $prijs, $id]);
         
-        $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM producten WHERE id = ?");
+        // Haal updated product
+        $stmt = $pdo->prepare("SELECT id, naam, prijs, created_at FROM products WHERE id = ?");
         $stmt->execute([$id]);
         $updatedProduct = $stmt->fetch();
         
@@ -217,7 +234,7 @@ if ($method === 'PUT') {
     exit();
 }
 
-// DELETE: Verwijder product
+
 if ($method === 'DELETE') {
     if (!$id) {
         http_response_code(400);
@@ -226,8 +243,8 @@ if ($method === 'DELETE') {
     }
     
     try {
-        
-        $stmt = $pdo->prepare("SELECT id FROM producten WHERE id = ?");
+        // Controleer of een product bestaat
+        $stmt = $pdo->prepare("SELECT id FROM products WHERE id = ?");
         $stmt->execute([$id]);
         if (!$stmt->fetch()) {
             http_response_code(404);
@@ -235,11 +252,11 @@ if ($method === 'DELETE') {
             exit();
         }
         
-        
-        $stmt = $pdo->prepare("DELETE FROM producten WHERE id = ?");
+        // Verwijder product
+        $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
         $stmt->execute([$id]);
         
-        http_response_code(204);
+        http_response_code(204); 
         exit();
     } catch (PDOException $e) {
         http_response_code(500);
@@ -247,6 +264,7 @@ if ($method === 'DELETE') {
     }
     exit();
 }
+
 
 http_response_code(405);
 echo json_encode(['error' => 'Methode niet toegestaan']);

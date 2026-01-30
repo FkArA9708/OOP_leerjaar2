@@ -1,5 +1,4 @@
 <?php
-
 require_once 'src/classes/ProductApiClient.php';
 
 $apiClient = new ProductApiClient();
@@ -11,15 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     try {
         $naam = trim($_POST['naam']);
         $prijs = trim($_POST['prijs']);
-        //als de prijs en naam leeg is en er zijn geen nummers in de prijs form (variabele)
+        
         if (empty($naam) || empty($prijs) || !is_numeric($prijs)) {
             throw new Exception('Voer een geldige naam en prijs in (prijs moet een getal zijn).');
         } 
-        //product wordt toegevoegd
+        
         $apiClient->addProduct($naam, $prijs);
         $message = 'Product succesvol toegevoegd!';
         $messageType = 'success';
-        
         
         header('Location: index.php?success=added&message=' . urlencode($message));
         exit();
@@ -33,16 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
 // FORMULIER VERWERKEN VOOR VERWIJDEREN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_product'])) {
     try {
-        $product_id = $_POST['product_id'] ?? 0; //id van product zoeken
-        //als product id lager of gelijk aan nul is, wordt het gezien als een ongeldig product id
+        $product_id = $_POST['product_id'] ?? 0;
+        
         if ($product_id <= 0) {
             throw new Exception('Ongeldig product ID');
         }
-        //product wordt verwijderd
+        
         if ($apiClient->deleteProduct($product_id)) {
             $message = 'Product succesvol verwijderd!';
             $messageType = 'success';
-            
             
             header('Location: index.php?success=deleted&message=' . urlencode($message));
             exit();
@@ -57,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_product'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
     try {
         $id = $_POST['product_id'] ?? 0;
-        $naam = trim($_POST['naam'] ?? ''); //naam, prijs en product id verwijzen naar variabelen
+        $naam = trim($_POST['naam'] ?? '');
         $prijs = trim($_POST['prijs'] ?? '');
         
         if ($id <= 0) {
@@ -71,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
         $result = $apiClient->updateProduct($id, $naam, $prijs);
         $message = 'Product succesvol bijgewerkt!';
         $messageType = 'success';
-        
         
         header('Location: index.php?success=updated&message=' . urlencode($message));
         exit();
@@ -145,7 +141,7 @@ try {
 </head>
 <body>
     <div class="container">
-        <h1>Producten Beheer - API Client</h1>
+        <h1>Producten Beheer - API Client (Localhost)</h1>
         
         <!-- Berichten tonen -->
         <?php if ($message): ?>
@@ -191,7 +187,7 @@ try {
                 </thead>
                 <tbody>
                     <?php foreach ($producten as $product): ?>
-                    <tr> <!--alle producten weergeven in een tabel -->
+                    <tr>
                         <td>#<?php echo $product->getId(); ?></td>
                         <td><strong><?php echo htmlspecialchars($product->getNaam()); ?></strong></td>
                         <td>€ <?php echo number_format($product->getPrijs(), 2, ',', '.'); ?></td>
@@ -203,16 +199,16 @@ try {
                                       onsubmit="return confirm('Weet je zeker dat je product #<?php echo $product->getId(); ?> wilt verwijderen?');">
                                     <input type="hidden" name="product_id" value="<?php echo $product->getId(); ?>">
                                     <button type="submit" name="delete_product" class="btn btn-delete">Verwijderen</button>
-                                </form> <!-- confirm box weergeven voor toestemming voor verwijderen van product -->
+                                </form>
                                 
-                    <!--bewerken knop -->
+                                <!-- bewerken knop -->
                                 <button type="button" class="btn btn-edit" 
-                data-id="<?php echo $product->getId(); ?>"
-                data-naam="<?php echo htmlspecialchars($product->getNaam(), ENT_QUOTES); ?>"
-                data-prijs="<?php echo $product->getPrijs(); ?>"
-                onclick="openEditForm(this)">
-            Bewerken
-                    </button>
+                                    data-id="<?php echo $product->getId(); ?>"
+                                    data-naam="<?php echo htmlspecialchars($product->getNaam(), ENT_QUOTES); ?>"
+                                    data-prijs="<?php echo $product->getPrijs(); ?>"
+                                    onclick="openEditForm(this)">
+                                    Bewerken
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -262,44 +258,28 @@ try {
     </div>
 
     <script>
-// Functie om bewerkformulier te tonen en in te vullen
-function openEditForm(buttonElement) {
-    // Haal gegevens uit data
-    var id = buttonElement.getAttribute('data-id');
-    var naam = buttonElement.getAttribute('data-naam');
-    var prijs = buttonElement.getAttribute('data-prijs');
-    
-    
-    document.getElementById('edit_product_id').value = id;
-    document.getElementById('edit_naam').value = naam;
-    document.getElementById('edit_prijs').value = prijs;
-    
-    
-    document.getElementById('editForm').style.display = 'block';
-    
-    
-    document.getElementById('editForm').scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-    });
-}
-
-// Functie om bewerkformulier te verbergen
-function closeEditForm() {
-    document.getElementById('editForm').style.display = 'none';
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM volledig geladen');
-    var editButtons = document.querySelectorAll('.btn-edit');
-    console.log('Aantal bewerk-knoppen gevonden:', editButtons.length);
-    
-    editButtons.forEach(function(button, index) {
-        button.addEventListener('click', function(e) {
-            console.log('Bewerk-knop geklikt:', e.target);
+    // Functie om bewerkformulier te tonen en in te vullen
+    function openEditForm(buttonElement) {
+        var id = buttonElement.getAttribute('data-id');
+        var naam = buttonElement.getAttribute('data-naam');
+        var prijs = buttonElement.getAttribute('data-prijs');
+        
+        document.getElementById('edit_product_id').value = id;
+        document.getElementById('edit_naam').value = naam;
+        document.getElementById('edit_prijs').value = prijs;
+        
+        document.getElementById('editForm').style.display = 'block';
+        
+        document.getElementById('editForm').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
         });
-    });
-});
-</script>
+    }
+
+    // Functie om bewerkformulier te verbergen
+    function closeEditForm() {
+        document.getElementById('editForm').style.display = 'none';
+    }
+    </script>
 </body>
 </html>
